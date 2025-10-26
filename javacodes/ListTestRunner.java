@@ -24,17 +24,32 @@ public class ListTestRunner {
             }
         }
         // 对比结果文件与标准答案
-        boolean isEqual = filesEqual(name.replaceAll("\\s+", "") + "_result.txt", "list_result.txt");
-        System.out.println("与标准答案对比结果: " + (isEqual ? "相同" : "不同"));
+        System.out.println("正在将" + name + "的测试结果与List_result.txt进行对比...");
+        boolean isEqual = filesEqual(
+            getDataFilePath(name.replaceAll("\\s+", "") + "_result.txt"), 
+            getDataFilePath("list_result.txt")
+        );
+        System.out.println("对比结果: " + (isEqual ? "相同" : "不同"));
     }
+    
+    /**
+     * 根据运行目录获取正确的文件路径
+     * @param fileName 文件名
+     * @return 正确的文件路径
+     */
+    private static String getDataFilePath(String fileName) {
+        return new File("data/list_testcase.txt").exists() ? 
+            "data/" + fileName : "../data/" + fileName;
+    }
+    
     //将list_testcase文档中字符转换为:ist.java中的对应方法。
     private static void testImplementation(String name, List<Character> list) {
         System.out.println("\n=== 测试 " + name + " 实现 ===");
         
         try {
             // 读取测试用例
-            try (Scanner fileScanner = new Scanner(new File("list_testcase.txt"));
-                 PrintWriter resultWriter = new PrintWriter(new FileWriter(name.replaceAll("\\s+", "") + "_result.txt"))) {
+            try (Scanner fileScanner = new Scanner(new File(getDataFilePath("list_testcase.txt")));
+                 PrintWriter resultWriter = new PrintWriter(new FileWriter(getDataFilePath(name.replaceAll("\\s+", "") + "_result.txt")))) {
             
             int testCase = 1;
             while (fileScanner.hasNextLine()) {
@@ -61,10 +76,10 @@ public class ListTestRunner {
             }
             }
             
-            System.out.println(name + " 测试完成！结果已保存到 " + name.replaceAll("\\s+", "") + "_result.txt");
+            System.out.println(name + " 测试完成！结果已保存到 ../" + name.replaceAll("\\s+", "") + "_result.txt\n（若初次运行，则该txt文件会自动在data目录下创建；若多次运行，则该txt文件会自动覆盖）");
             
         } catch (FileNotFoundException e) {
-            System.err.println("找不到测试文件 list_testcase.txt");
+            System.err.println("找不到测试文件 ../list_testcase.txt");
         } catch (IOException e) {
             System.err.println("文件读写错误: " + e.getMessage());
         }
