@@ -15,8 +15,7 @@ public class DoublyLinkedListImpl implements List<Character> {
         
         Node(Character data) {
             this.data = data;
-            this.next = null;
-            this.prev = null;
+            // next 和 prev 默认初始化为 null，无需显式赋值
         }
     }
     
@@ -43,53 +42,46 @@ public class DoublyLinkedListImpl implements List<Character> {
         if (newElement == null) {
             throw new ListException("Cannot insert null element");
         }
-        
         if (isFull()) {
             throw new ListException("List is full, cannot insert new element");
         }
-        
+    
         Node newNode = new Node(newElement);
-        
+    
         if (isEmpty()) {
             // 空列表，插入第一个元素
             head = newNode;
             tail = newNode;
-            cursor = newNode;
             size = 1;
         } else if (cursor == null) {
             // 光标为null，插入到头部
             newNode.next = head;
-            if (head != null) {
-                head.prev = newNode;
-            }
+            head.prev = newNode;
             head = newNode;
-            cursor = newNode;
             size++;
         } else {
             // 在光标位置后插入元素
             newNode.next = cursor.next;
             newNode.prev = cursor;
-            
             if (cursor.next != null) {
                 cursor.next.prev = newNode;
             } else {
-                // 光标在尾部，更新tail
-                tail = newNode;
+                tail = newNode; // 光标在尾部，更新tail
             }
-            
             cursor.next = newNode;
-            cursor = newNode; // 移动光标到新插入的元素
             size++;
         }
+        // 统一设置光标指向新节点
+        cursor = newNode;
     }
     
     @Override
     public void remove() {
-        if (isEmpty()) {
-            return; // 空列表，什么都不做
+        if (isEmpty() || cursor == null) {
+            return; // 空列表或光标为null，什么都不做
         }
         
-        if (cursor == head && cursor == tail) {
+        if (size == 1) {
             // 只有一个元素
             head = null;
             tail = null;
@@ -97,16 +89,12 @@ public class DoublyLinkedListImpl implements List<Character> {
         } else if (cursor == head) {
             // 删除头节点
             head = head.next;
-            if (head != null) {
-                head.prev = null;
-            }
+            head.prev = null;  // head肯定不为null，因为size > 1
             cursor = head;
         } else if (cursor == tail) {
             // 删除尾节点
             tail = tail.prev;
-            if (tail != null) {
-                tail.next = null;
-            }
+            tail.next = null;  // tail肯定不为null，因为size > 1
             cursor = head; // 光标移到开头
         } else {
             // 删除中间节点
@@ -164,7 +152,10 @@ public class DoublyLinkedListImpl implements List<Character> {
     
     @Override
     public boolean gotoNext() {
-        if (isEmpty() || cursor == null || cursor.next == null) {
+        if (isEmpty() || cursor == null) {
+            return false;
+        }
+        if (cursor.next == null) {
             return false;
         }
         cursor = cursor.next;
@@ -173,7 +164,10 @@ public class DoublyLinkedListImpl implements List<Character> {
     
     @Override
     public boolean gotoPrev() {
-        if (isEmpty() || cursor == null || cursor.prev == null) {
+        if (isEmpty() || cursor == null) {
+            return false;
+        }
+        if (cursor.prev == null) {
             return false;
         }
         cursor = cursor.prev;
@@ -213,54 +207,65 @@ public class DoublyLinkedListImpl implements List<Character> {
             return;
         }
         
-        Character element = cursor.data;
-        
-        // 删除当前节点
-        remove();
-        
-        // 调整目标位置（因为删除了一个元素）
-        if (n >= size) {
-            n = size - 1; // 如果目标位置超出范围，移到最后一个位置
+        int currentPos = getCursorPosition();
+        // 如果光标已经在目标位置，不需要移动
+        if (currentPos == n) {
+            return;
         }
         
-        // 在位置n插入元素
-        if (n == 0) {
-            // 插入到头部
-            Node newNode = new Node(element);
-            newNode.next = head;
-            if (head != null) {
-                head.prev = newNode;
-            } else {
-                tail = newNode;
-            }
-            head = newNode;
-            cursor = newNode;
-        } else if (n == size) {
-            // 插入到尾部
-            Node newNode = new Node(element);
-            newNode.prev = tail;
-            if (tail != null) {
-                tail.next = newNode;
-            } else {
-                head = newNode;
-            }
-            tail = newNode;
-            cursor = newNode;
+        Node nodeToMove = cursor;
+        
+        // 先断开当前节点
+        if (nodeToMove.prev != null) {
+            nodeToMove.prev.next = nodeToMove.next;
         } else {
-            // 插入到中间
-            Node current = head;
-            for (int i = 0; i < n; i++) {
-                current = current.next;
-            }
-            
-            Node newNode = new Node(element);
-            newNode.next = current;
-            newNode.prev = current.prev;
-            current.prev.next = newNode;
-            current.prev = newNode;
-            cursor = newNode;
+            head = nodeToMove.next;  // 是头节点
         }
-        size++;
+        
+        if (nodeToMove.next != null) {
+            nodeToMove.next.prev = nodeToMove.prev;
+        } else {
+            tail = nodeToMove.prev;  // 是尾节点
+        }
+        
+        // 断开节点后，列表大小减少了1
+        // 如果目标位置n > 当前光标位置，需要调整目标位置（因为移除了当前节点）
+        int targetPos = (n > currentPos) ? n - 1 : n;
+        size--;  // 临时减少size
+        
+        // 重新插入到目标位置
+        if (targetPos == 0) {
+            // 插入到头部
+            nodeToMove.prev = null;
+            nodeToMove.next = head;
+            if (head != null) {
+                head.prev = nodeToMove;
+            } else {
+                // 列表断开后为空，这是唯一元素
+                tail = nodeToMove;
+            }
+            head = nodeToMove;
+        } else if (targetPos >= size) {
+            // 插入到尾部（size是断开后的值，且size > 0，所以tail肯定不为null）
+            nodeToMove.prev = tail;
+            nodeToMove.next = null;
+            tail.next = nodeToMove;
+            tail = nodeToMove;
+        } else {
+            // 插入到中间位置（targetPos在1到size-1之间）
+            Node target = head;
+            for (int i = 0; i < targetPos; i++) {
+                target = target.next;
+            }
+            // 此时target.prev肯定不为null，因为targetPos > 0
+            nodeToMove.prev = target.prev;
+            nodeToMove.next = target;
+            target.prev.next = nodeToMove;
+            target.prev = nodeToMove;
+        }
+        
+        cursor = nodeToMove;
+        size++;  // 恢复size
     }
     
     @Override
@@ -269,8 +274,8 @@ public class DoublyLinkedListImpl implements List<Character> {
             return false;
         }
         
-        // 从光标位置开始搜索
-        Node current = cursor;
+        // 从光标位置开始搜索（如果cursor为null，从head开始）
+        Node current = (cursor != null) ? cursor : head;
         while (current != null) {
             if (current.data.equals(searchElement)) {
                 cursor = current;
