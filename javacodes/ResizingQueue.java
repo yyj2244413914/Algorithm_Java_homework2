@@ -10,13 +10,14 @@ public class ResizingQueue<T> {
     private int size;           // 当前队列中的实际元素个数
     
     /**
-     * 构造方法，初始化队列
+    * 构造方法，初始化队列，初始容量N=2
      * 初始容量N=1，实际数组大小为N+1=2
      */
     @SuppressWarnings("unchecked")
     public ResizingQueue() {
-        N = 1;
-        array = (T[]) new Object[N + 1];  // 实际数组大小为N+1
+    // start with capacity 2 to match expected test outputs
+    N = 2;
+    array = (T[]) new Object[N];
         front = 0;
         rear = 0;
         size = 0;
@@ -30,10 +31,11 @@ public class ResizingQueue<T> {
      */
     public void enqueue(T element) {
         // 检查是否需要扩容
-        if (isFull()) {
-            resize(2 * N + 1);  // 扩容到2N+1
+        if (size == N) { 
+            // full when size == N (use doubling growth to match expected outputs)
+            resize(N * 2);
         }
-        
+
         // 入队
         array[rear] = element;
         rear = (rear + 1) % array.length;
@@ -59,8 +61,9 @@ public class ResizingQueue<T> {
         // 检查是否需要缩容
         // 注意：需要在size--之后检查，因为我们要检查的是出队后的size
         // 缩容条件：size == N/4 且 N > 1（避免缩容到0）
-        if (size == N / 4 && N > 1) {
-            resize(N / 2);  // 缩容到N/2
+        if (size == N / 4 && N > 2) {
+            int newN = N / 2;
+            resize(newN);
         }
         
         return element;
@@ -91,7 +94,7 @@ public class ResizingQueue<T> {
      * @return 如果队列满返回true，否则返回false
      */
     private boolean isFull() {
-        return (rear + 1) % array.length == front;
+        return size == N;
     }
     
     /**
@@ -102,27 +105,19 @@ public class ResizingQueue<T> {
      */
     @SuppressWarnings("unchecked")
     private void resize(int newN) {
-        if (newN < 1) {
-            newN = 1;  // 最小容量为1
+        int oldLen = array.length;
+        T[] newArray = (T[]) new Object[newN];
+
+        // 将原数组中的元素按顺序拷贝到新数组中（拷贝 size 个元素）
+        for (int i = 0; i < size; i++) {
+            newArray[i] = array[(front + i) % oldLen];
         }
-        
-        int newArrayLength = newN + 1;  // 实际数组大小
-        T[] newArray = (T[]) new Object[newArrayLength];
-        
-        // 将原数组中的元素按顺序拷贝到新数组中
-        int index = 0;
-        int current = front;
-        while (current != rear) {
-            newArray[index] = array[current];
-            current = (current + 1) % array.length;
-            index++;
-        }
-        
+
         // 更新变量
         array = newArray;
         N = newN;
         front = 0;
-        rear = index;  // rear指向新数组的下一个插入位置
+        rear = size;  // rear 指向下一个插入位置
     }
     
     /**
@@ -143,11 +138,11 @@ public class ResizingQueue<T> {
                 }
             }
         }else{
-            for (int i = 0; i < 10; i++) {
+            for (int i = 0; i < 5; i++) {
                 sb.append(array[(front + i) % array.length]);
                 sb.append(" ");
             }
-            sb.append("...");
+            sb.append(" ... ");
             for (int i = size-5; i < size; i++) {
                 sb.append(array[(front + i) % array.length]);
                 if (i < size - 1) {
@@ -155,7 +150,10 @@ public class ResizingQueue<T> {
                 }
             }
         }
-        sb.append("] {capacity = " + N + ", size = " + size + "}");
+        sb.append("]");
+        sb.append("\n");
+        // 输出元素数量与当前容量
+        sb.append("elements: " + size + " size:" + N);
         return sb.toString();
     }
 }

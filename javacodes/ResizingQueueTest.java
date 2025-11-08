@@ -3,125 +3,79 @@
  * ResizingQueue测试类
  */
 
-import java.io.*;
 import java.util.Scanner;
 
 public class ResizingQueueTest {
 
     public static void main(String[] args) {
         System.out.println("=== ResizingQueue 测试运行器 ===");
-        System.out.println("1. result1000.txt");
-        System.out.println("2. result5000.txt");
+        System.out.println("1. test1000.txt");
+        System.out.println("2. test5000.txt");
         System.out.print("请选择测试文件 (1-2): ");
+        String choiceName = "";
+        String outPutName = "";
+        String resultName = "";
         try (Scanner scanner = new Scanner(System.in)) {
             int choice = scanner.nextInt();
             switch (choice) {
                 case 1 -> {
+                    choiceName = "test1000.txt";
+                    outPutName = "test1000_result.txt";
+                    resultName = "result1000.txt";
+                    ResizingQueue<Integer> queue = new ResizingQueue<>();
+                    FileImt.runTests("循环队列", "test1000.txt", queue);
                 }
                 case 2 -> {
+                    choiceName = "test5000.txt";
+                    outPutName = "test5000_result.txt";
+                    resultName = "result5000.txt";
+                    ResizingQueue<Integer> queue = new ResizingQueue<>();
+                    FileImt.runTests("循环队列", "test5000.txt", queue);
                 }
                 default -> System.out.println("无效选择！");
             }
         }
         // 对比结果文件与标准答案
-        System.out.println("正在将result1000.txt的测试结果与result.txt进行对比...");
-        boolean isEqual = filesEqual(
-                getDataFilePath("result1000.txt"),
-                getDataFilePath("result.txt"));
+        System.out.println("正在将" + outPutName + "的测试结果与" + resultName + "进行对比...");
+        boolean isEqual = FileImt.filesEqual(
+                FileImt.getDataFilePath(outPutName),
+                FileImt.getDataFilePath(resultName));
         System.out.println("对比结果: " + (isEqual ? "相同" : "不同"));
     }
 
     /**
-     * 根据运行目录获取正确的文件路径
-     * 
-     * @param fileName 文件名
-     * @return 正确的文件路径
+     * 为 ResizingQueue 提供的命令处理器：被 FileImt 调用以保持与其他测试的一致性
+     * 支持命令：
+     * '+' 后跟元素 -> enqueue
+     * '-' -> dequeue
+     * 其它命令将被忽略（与之前在 FileImt 中的处理保持一致）
      */
-    private static String getDataFilePath(String fileName) {
-        return new File("data/list_testcase.txt").exists() ? "data/" + fileName : "../data/" + fileName;
-    }
+    /**
+     * 处理循环队列的单个命令，符合说明：
+     * - 数字（例如 123）表示 enqueue 该整数；
+     * - '-' 表示 dequeue；
+     * - '?' 表示生成当前队列的字符串表示（由调用者写入结果文件）。
+     * 返回在遇到 '?' 时的输出字符串，否则返回 null。
+     */
+    public static String processCommand(ResizingQueue<Integer> queue, String command) {
+        if (command == null || command.isEmpty()) return null;
+        // 直接匹配单字符命令
+        if ("-".equals(command)) {
+            queue.dequeue();
+            return null;
+        }
+        if ("?".equals(command)) {
+            return queue.toString();
+        }
 
-    // 将list_testcase文档中字符转换为:ist.java中的对应方法。
-    private static void testImplementation(String name, List<Character> list) {
-        System.out.println("\n=== 测试 " + name + " 实现 ===");
-
+        // 否则尝试解析为整数并入队
         try {
-            // 读取测试用例
-            try (Scanner fileScanner = new Scanner(new File(getDataFilePath("list_testcase.txt")));
-                    PrintWriter resultWriter = new PrintWriter(
-                            new FileWriter(getDataFilePath(name.replaceAll("\\s+", "") + "_result.txt")))) {
-
-                int testCase = 1;
-                while (fileScanner.hasNextLine()) {
-                    String line = fileScanner.nextLine().trim();
-                    if (line.isEmpty())
-                        continue;
-
-                    System.out.println(
-                            "测试用例 " + testCase + ": " + line.substring(0, Math.min(50, line.length())) + "...");
-
-                    // 处理命令序列（不清空列表，保留上一个测试用例的状态）
-                    String[] commands = line.split("\\s+");
-                    for (String command : commands) {
-                        if (command.isEmpty())
-                            continue;
-
-                        try {
-                            processCommand(list, command);
-                        } catch (ListException e) {
-                            resultWriter.println("Error: " + e.getMessage());
-                        }
-                    }
-
-                    // 输出最终状态
-                    list.showStructure(resultWriter);
-                    testCase++;
-                }
-            }
-
-            System.out.println(name + " 测试完成！结果已保存到 data/" + name.replaceAll("\\s+", "")
-                    + "_result.txt\n（若初次运行，则该txt文件会自动在data目录下创建；若多次运行，则该txt文件会自动覆盖）");
-
-        } catch (FileNotFoundException e) {
-            System.err.println("找不到测试文件 data/list_testcase.txt");
-        } catch (IOException e) {
-            System.err.println("文件读写错误: " + e.getMessage());
+            int val = Integer.parseInt(command);
+            queue.enqueue(val);
+        } catch (NumberFormatException e) {
+            // 非整数且非特殊符号，忽略
         }
-    }
-
-    private static void processCommand(List<Character> list, String command) throws ListException {
-        if (command.length() < 1)
-            return;
-
-        char operation = command.charAt(0);
-        Character element = null;
-
-        // 提取元素（如果有）
-        if (command.length() > 1) {
-            element = command.charAt(1);
-        }
-
-        switch (operation) {
-            case '+' -> { // insert
-                if (element != null) {
-                    list.insert(element);
-                }
-            }
-            case '-' -> list.remove(); // remove
-            case '=' -> { // replace
-                if (element != null) {
-                    list.replace(element);
-                }
-            }
-            case '#' -> list.gotoBeginning(); // gotoBeginning
-            case '*' -> list.gotoEnd(); // gotoEnd
-            case '>' -> list.gotoNext(); // gotoNext
-            case '<' -> list.gotoPrev(); // gotoPrev
-            case '~' -> list.clear(); // clear
-            default -> {
-                // 忽略未知命令
-            }
-        }
+        return null;
     }
 
     /**
@@ -132,23 +86,4 @@ public class ResizingQueueTest {
      * @param path2 第二个文件路径
      * @return 相同返回 true，否则返回 false
      */
-    public static boolean filesEqual(String path1, String path2) {
-        try (BufferedReader r1 = new BufferedReader(new FileReader(path1));
-                BufferedReader r2 = new BufferedReader(new FileReader(path2))) {
-            String l1, l2;
-            while ((l1 = r1.readLine()) != null) {
-                l2 = r2.readLine();
-                if (l2 == null)
-                    return false; // 第二个文件提前结束
-                if (!l1.equals(l2))
-                    return false; // 内容不同
-            }
-            // 确认第二个文件也已结束
-            return r2.readLine() == null;
-        } catch (IOException e) {
-            // 读取出错视为不相同
-            System.err.println("文件读写错误: " + e.getMessage());
-            return false;
-        }
-    }
 }

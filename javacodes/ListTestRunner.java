@@ -18,17 +18,17 @@ public class ListTestRunner {
             switch (choice) {
                 case 1 -> {
                     List<Character> list = new ArrayListImpl();
-                    FileImt.runTests("顺序数组", list);
+                    FileImt.runTests("顺序数组", "list_testcase.txt", list);
                     name = "顺序数组";
                 }
                 case 2 -> {
                     List<Character> list = new SinglyLinkedListImpl();
-                    FileImt.runTests("单向链表", list);
+                    FileImt.runTests("单向链表", "list_testcase.txt", list);
                     name = "单向链表";
                 }
                 case 3 -> {
                     List<Character> list = new DoublyLinkedListImpl();
-                    FileImt.runTests("双向链表", list);
+                    FileImt.runTests("双向链表", "list_testcase.txt", list);
                     name = "双向链表";
                 }
                 default -> System.out.println("无效选择！");
@@ -36,7 +36,7 @@ public class ListTestRunner {
         }
         // 对比结果文件与标准答案
         System.out.println("正在将" + name + "的测试结果与List_result.txt进行对比...");
-    boolean isEqual = FileImt.filesEqual(
+        boolean isEqual = FileImt.filesEqual(
         FileImt.getDataFilePath(name.replaceAll("\s+", "") + "_result.txt"),
         FileImt.getDataFilePath("list_result.txt"));
         System.out.println("对比结果: " + (isEqual ? "相同" : "不同"));

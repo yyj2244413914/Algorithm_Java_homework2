@@ -54,8 +54,8 @@ public class FileImt {
 	 */
 
 
-	public static boolean runTests(String name, List<Character> list) {
-		String inPath = getDataFilePath("list_testcase.txt");
+	public static boolean runTests(String name, String testName, List<Character> list) {
+		String inPath = getDataFilePath(testName);
 		String outPath = getDataFilePath(name.replaceAll("\\s+", "") + "_result.txt");
 
 		try (Scanner fileScanner = new Scanner(new File(inPath));
@@ -78,8 +78,6 @@ public class FileImt {
 					} catch (ListException e) {
 						resultWriter.println("Error: " + e.getMessage());
 					}
-
-                    
 				}
 
 				// 输出最终状态
@@ -99,4 +97,50 @@ public class FileImt {
 		}
 	}
 
+	/**
+	 * 为 ResizingQueue 提供的重载：接受循环队列实例并按命令执行（只识别 enqueue/dequeue 命令）
+	 */
+	public static boolean runTests(String name, String testName, ResizingQueue<Integer> queue) {
+		String inPath = getDataFilePath(testName);
+		// 去掉 testName 的扩展名再拼接结果文件名（例如 result1000.txt -> result1000_result.txt）
+		String baseName = testName;
+		int dot = baseName.lastIndexOf('.');
+		if (dot > 0) baseName = baseName.substring(0, dot);
+		baseName = baseName.replaceAll("\\s+", "");
+		String outPath = getDataFilePath(baseName + "_result.txt");
+
+		try (Scanner fileScanner = new Scanner(new File(inPath));
+			 PrintWriter resultWriter = new PrintWriter(new FileWriter(outPath))) {
+
+			int testCase = 1;
+			while (fileScanner.hasNextLine()) {
+				String line = fileScanner.nextLine().trim();
+				if (line.isEmpty()) continue;
+
+				System.out.println("测试用例 " + testCase + ": " + line.substring(0, Math.min(50, line.length())) + "...");
+
+				String[] commands = line.split("\\s+");
+				for (String command : commands) {
+					if (command.isEmpty()) continue;
+					// 委托给 ResizingQueueTest 的 processCommand，以保持与 List 测试处理一致性
+					String out = ResizingQueueTest.processCommand(queue, command);
+					if (out != null) {
+						// 仅在遇到 '?' 时写入输出
+						resultWriter.println(out);
+					}
+				}
+				testCase++;
+			}
+			System.out.println(name + " 测试完成！结果已保存到 " + outPath);
+			return true;
+
+		} catch (FileNotFoundException e) {
+			System.err.println("找不到测试文件 " + inPath);
+			return false;
+		} catch (IOException e) {
+			System.err.println("文件读写错误: " + e.getMessage());
+			return false;
+		}
+	}
 }
+
