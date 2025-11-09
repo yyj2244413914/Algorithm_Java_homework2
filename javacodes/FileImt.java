@@ -85,7 +85,7 @@ public class FileImt {
 				testCase++;
 			}
 
-			System.out.println(name + " 测试完成！结果已保存到 " + outPath);
+			System.out.println(name + " 测试完成！结果已保存到 " + outPath+"（如果输出文件已存在，则会覆盖。）");
 			return true;
 
 		} catch (FileNotFoundException e) {
